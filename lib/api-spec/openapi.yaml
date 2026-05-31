@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ROADSOS AI Emergency Response API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: profile
+    description: User profile and medical ID
+  - name: sos
+    description: SOS alerts and emergency management
+  - name: chat
+    description: AI emergency assistant chat
+  - name: incidents
+    description: Incident reporting and history
 paths:
   /healthz:
     get:
@@ -24,6 +32,208 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Profile not found
+    post:
+      operationId: saveProfile
+      tags: [profile]
+      summary: Create or update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /sos:
+    post:
+      operationId: triggerSos
+      tags: [sos]
+      summary: Trigger an SOS alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SosInput"
+      responses:
+        "201":
+          description: SOS triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosAlert"
+    get:
+      operationId: getSosHistory
+      tags: [sos]
+      summary: Get SOS alert history
+      responses:
+        "200":
+          description: SOS history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SosAlert"
+
+  /sos/{id}/cancel:
+    post:
+      operationId: cancelSos
+      tags: [sos]
+      summary: Cancel an active SOS alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: SOS cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosAlert"
+
+  /sos/active:
+    get:
+      operationId: getActiveSos
+      tags: [sos]
+      summary: Get current active SOS alert if any
+      responses:
+        "200":
+          description: Active SOS or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActiveSosStatus"
+
+  /incidents:
+    get:
+      operationId: getIncidents
+      tags: [incidents]
+      summary: Get incident history
+      responses:
+        "200":
+          description: Incident list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incident"
+    post:
+      operationId: reportIncident
+      tags: [incidents]
+      summary: Report a new incident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentInput"
+      responses:
+        "201":
+          description: Incident reported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+
+  /chat:
+    get:
+      operationId: getChatHistory
+      tags: [chat]
+      summary: Get AI chat history (last 50 messages)
+      responses:
+        "200":
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send message to AI emergency assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
+  /emergency/stats:
+    get:
+      operationId: getEmergencyStats
+      tags: [sos]
+      summary: Get golden hour dashboard stats
+      responses:
+        "200":
+          description: Emergency stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyStats"
+
+  /nearby-services:
+    get:
+      operationId: getNearbyServices
+      tags: [sos]
+      summary: Get nearby emergency services
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Nearby services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NearbyService"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +244,246 @@ components:
       required:
         - status
 
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        fullName:
+          type: string
+        bloodGroup:
+          type: string
+        allergies:
+          type: string
+        medications:
+          type: string
+        emergencyContacts:
+          type: string
+        insuranceInfo:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - fullName
+        - bloodGroup
+
+    UserProfileInput:
+      type: object
+      properties:
+        userId:
+          type: string
+        fullName:
+          type: string
+        bloodGroup:
+          type: string
+        allergies:
+          type: string
+        medications:
+          type: string
+        emergencyContacts:
+          type: string
+        insuranceInfo:
+          type: string
+      required:
+        - userId
+        - fullName
+        - bloodGroup
+
+    SosAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+        triggeredAt:
+          type: string
+        cancelledAt:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+        severity:
+          type: string
+        notes:
+          type: ["string", "null"]
+      required:
+        - id
+        - userId
+        - status
+        - triggeredAt
+
+    SosInput:
+      type: object
+      properties:
+        userId:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        severity:
+          type: string
+        notes:
+          type: string
+      required:
+        - userId
+
+    ActiveSosStatus:
+      type: object
+      properties:
+        active:
+          type: boolean
+        alert:
+          $ref: "#/components/schemas/SosAlert"
+      required:
+        - active
+
+    Incident:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        severity:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - type
+        - severity
+        - status
+        - createdAt
+
+    IncidentInput:
+      type: object
+      properties:
+        userId:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        severity:
+          type: string
+      required:
+        - userId
+        - type
+        - severity
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - role
+        - content
+        - createdAt
+
+    ChatInput:
+      type: object
+      properties:
+        userId:
+          type: string
+        message:
+          type: string
+      required:
+        - userId
+        - message
+
+    EmergencyStats:
+      type: object
+      properties:
+        severityScore:
+          type: integer
+        ambulanceEta:
+          type: integer
+        nearbyTraumaCenters:
+          type: integer
+        activeResponders:
+          type: integer
+        networkQuality:
+          type: string
+        emergencyReadiness:
+          type: integer
+        gpsStatus:
+          type: string
+        totalSosThisMonth:
+          type: integer
+        avgResponseTime:
+          type: number
+      required:
+        - severityScore
+        - ambulanceEta
+        - nearbyTraumaCenters
+        - activeResponders
+        - networkQuality
+        - emergencyReadiness
+        - gpsStatus
+
+    NearbyService:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        distance:
+          type: number
+        phone:
+          type: string
+        eta:
+          type: integer
+        available:
+          type: boolean
+      required:
+        - id
+        - name
+        - type
+        - distance
+        - available

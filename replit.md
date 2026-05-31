@@ -1,6 +1,6 @@
-# [Project name]
+# ROADSOS AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An AI-powered emergency response platform for road safety — a futuristic PWA with SOS alerts, crash detection, AI chat, live maps, and medical ID.
 
 ## Run & Operate
 
@@ -14,23 +14,36 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite, TailwindCSS, Framer Motion, Wouter, shadcn/ui
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- PWA: manifest.json + service worker
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — single source of truth for all API contracts
+- `lib/db/src/schema/` — DB schema (profiles, sos_alerts, incidents, chat_messages)
+- `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/roadsos/src/` — React frontend
+  - `src/lib/auth.tsx` — Auth context (localStorage-based, userId="demo-user")
+  - `src/components/ProtectedRoute.tsx` — Route guard
+  - `src/components/Layout.tsx` — Bottom nav layout
+  - `src/pages/` — All 14 app pages
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Auth is localStorage-based (no Firebase) — userId defaults to "demo-user". Add Firebase Auth later if needed.
+- No Google Maps API used — map is stylized CSS/SVG with dummy markers. Add Maps JS API later.
+- AI chat uses keyword-matching responses (no OpenAI) — responses are pre-programmed for common emergencies.
+- Nearby services are hardcoded on the server — no real Places API integration needed for demo.
+- PWA manifest + service worker registered for installability.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+ROADSOS AI provides: splash/auth screens, a golden-hour HUD dashboard with animated SOS button, AI crash detection with simulated G-force sensor, severity analyzer for accident images, live map with service filters, smart medical ID with QR code, AI emergency chat assistant, incident history, and profile management.
 
 ## User preferences
 
@@ -38,7 +51,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `useAuth` must be imported from `@/lib/auth` (not relative `./auth`)
+- Seeded demo profile for "demo-user" in DB (O+ blood group, Alex Kumar)
+- Run codegen after any OpenAPI spec change before touching frontend code
 
 ## Pointers
 
