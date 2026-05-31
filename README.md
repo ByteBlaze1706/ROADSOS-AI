@@ -182,5 +182,5 @@ This project is licensed under the MIT License.
 # 🔗 Project Link
 
 ```bash
-[https://your-replit-link.replit.app](https://emergency-response-ai--hekaredevayani0.replit.app)
+https://emergency-response-ai--hekaredevayani0.replit.app/
 ```
