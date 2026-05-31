@@ -1,0 +1,369 @@
+Build a Complete AI-Powered Emergency Response Mobile App
+
+Create a fully functional modern mobile-first emergency response application named ROADSOS AI using React + Vite + TailwindCSS + Firebase + Framer Motion + Google Maps API.
+
+The app should look like a premium futuristic emergency safety platform with a clean cyberpunk-inspired UI using:
+
+Dark background (#050510)
+Neon red emergency accents
+Glassmorphism cards
+Orbitron font for headings
+Smooth animations
+Mobile responsive layout
+PWA support
+
+The app should feel like a real startup-grade product, not a simple hackathon UI.
+
+CORE APP REQUIREMENTS
+AUTHENTICATION SYSTEM
+
+Implement Firebase Authentication with:
+
+Email/password login
+Signup screen
+Google Sign-In
+Password strength indicator
+Forgot password flow
+Persistent login
+Logout confirmation dialog
+Protected routes
+
+After signup:
+
+Redirect users to profile setup.
+PROFILE SETUP PAGE
+
+Collect and store:
+
+Full Name
+Blood Group
+Allergies
+Medications
+Emergency Contacts
+Insurance Information
+
+Design:
+
+Futuristic glassmorphism cards
+Floating labels
+Responsive form
+
+Store data in Firebase Firestore.
+
+HOME DASHBOARD
+
+Create a premium dashboard with:
+
+LIVE MAP
+Google Maps integration
+Live GPS location tracking
+Nearby emergency service markers:
+Hospitals
+Ambulance
+Police
+Towing
+Puncture Shops
+Fuel Stations
+
+Use color-coded markers:
+
+Red = Hospital
+Blue = Police
+Orange = Towing
+Yellow = Fuel
+QUICK ACTION CARDS
+
+Animated cards for:
+
+Hospitals
+Ambulance
+Police
+Towing
+Puncture Shops
+Fuel
+
+Each card:
+
+Has hover/tap animation
+Opens nearby service list
+SOS SYSTEM
+
+Create a giant animated emergency SOS button:
+
+Neon red glow
+Pulse animation
+Floating button
+
+When pressed:
+
+Show 10-second countdown overlay
+Allow cancel option
+After countdown:
+Send emergency alerts
+Share live GPS
+Notify emergency contacts
+Trigger fullscreen emergency mode
+
+Add:
+
+10-second cooldown
+Haptic vibration
+Alarm sound
+EMERGENCY ACTIVE SCREEN
+
+Create cinematic fullscreen emergency UI:
+
+Live map
+Animated siren effect
+Emergency status cards
+ETA countdown
+“Contacts Notified”
+“Ambulance Dispatched”
+“Police Alerted”
+
+Add pulsing animations and real-time visual feedback.
+
+VOICE ACTIVATION SYSTEM
+
+Implement continuous background voice listening.
+
+Trigger words:
+
+SOS
+HELP
+HELP ME
+EMERGENCY
+BACHAO
+MADAD
+
+Requirements:
+
+Hindi + English support
+Floating mic indicator
+Turns red when listening
+Show “SOS ACTIVATED” animation on detection
+Graceful microphone permission handling
+
+Fallback:
+
+Manual SOS for unsupported browsers/devices.
+AI CRASH DETECTION
+
+Use device motion sensors:
+
+Detect sudden impact
+15g threshold
+
+When crash detected:
+
+Fullscreen red flash
+Siren animation
+Typewriter text:
+“IMPACT DETECTED — AI ANALYZING...”
+
+Then:
+
+Show severity popup
+Start emergency countdown
+Allow cancel
+
+Add:
+
+Demo “Simulate Crash” button.
+GOLDEN HOUR AI DASHBOARD
+
+Create futuristic HUD-style emergency dashboard.
+
+Include:
+
+Severity Score
+Ambulance ETA
+Nearby Trauma Centers
+Active Responders
+Network Quality
+Emergency Readiness
+GPS Status
+
+Add:
+
+Radar sweep animation
+Response timeline
+Smart city ticker
+Medical snapshot card
+
+Use Iron Man / Jarvis inspired UI.
+
+AI SEVERITY ANALYZER
+
+Create AI-powered accident image analysis page.
+
+Features:
+
+Upload image
+Camera capture
+AI scanning animation
+Sweep grid overlay
+Severity output:
+LOW
+MEDIUM
+CRITICAL
+
+If CRITICAL:
+
+Show “Activate SOS” button
+
+Add recommendations card.
+
+LIVE MAP SYSTEM
+
+Create interactive live emergency map:
+
+Animated route lines
+Moving ambulance simulation
+Pulsing 2km user radius
+Filter chips:
+All
+Hospitals
+Police
+Towing
+Puncture
+Fuel
+
+Add service list cards:
+
+Call button
+Navigate button
+SMART MEDICAL ID
+
+Create emergency medical ID module.
+
+Features:
+
+QR code generation
+Blood group badge
+Emergency mode view
+Large readable text for paramedics
+Emergency contacts
+Insurance info
+Share Medical ID button
+
+Add:
+
+Web Share API support
+AI EMERGENCY ASSISTANT
+
+Create futuristic AI chatbot assistant.
+
+Features:
+
+Quick emergency prompts
+Chat history
+AI typing animation
+Glassmorphism chat UI
+Emergency recommendations
+Nearby hospitals suggestions
+
+Store last 50 chats in local storage.
+
+OFFLINE EMERGENCY MODE
+
+Implement offline-first support:
+
+Detect network loss
+Show offline banner
+Cache:
+Hospitals
+Contacts
+Medical profile
+
+Use:
+
+localforage
+Service Workers
+
+Auto-sync when internet returns.
+
+SMART CITY WIDGET
+
+Add futuristic smart city simulation:
+
+Traffic grid
+Ambulance movement
+Data ticker
+Infrastructure visualization
+
+Purely visual futuristic dashboard element.
+
+UI / UX REQUIREMENTS
+
+Design language:
+
+Premium startup quality
+Minimal but futuristic
+Smooth GPU optimized animations
+Framer Motion animations
+Glassmorphism everywhere
+Neon emergency effects
+Responsive on:
+Mobile
+Tablet
+Desktop
+TECH STACK
+
+Frontend:
+
+React + Vite
+TailwindCSS
+Framer Motion
+
+Backend:
+
+Firebase Authentication
+Firestore
+Firebase Hosting
+
+Maps:
+
+Google Maps API
+
+Storage:
+
+localforage
+
+PWA:
+
+Installable app
+Offline support
+IMPORTANT DEVELOPMENT RULES
+Use Clean Architecture
+Organize reusable components
+Do NOT hardcode service data
+Use modular folder structure
+Use responsive layouts everywhere
+Optimize for performance
+Add loading skeletons
+Add smooth page transitions
+Use realistic dummy emergency data
+FINAL OUTPUT REQUIRED
+
+Generate:
+
+Complete working application
+Responsive UI
+Production-ready frontend
+Firebase integration setup
+Reusable components
+Beautiful animations
+Clean modern codebase
+Mobile app feel
+PWA support
+
+The app should look visually impressive enough for:
+
+SIH Hackathon
+Startup Demo
+Investor Pitch
+Production MVP
+
+The overall feeling should be:
+“AI-powered futuristic emergency operating system for road safety.”
