@@ -30,7 +30,7 @@ import {
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const { userId, setActiveSos } = useAuth();
+  const { userId, setActiveSos, location } = useAuth();
   const triggerSosMutation = useTriggerSos();
   const { data: stats } = useGetEmergencyStats({
     query: { queryKey: getGetEmergencyStatsQueryKey() },
@@ -117,8 +117,8 @@ export default function Dashboard() {
       {
         data: {
           userId: userId || "demo-user",
-          latitude: 37.7749,
-          longitude: -122.4194,
+          latitude: location ? parseFloat(location.lat) : 37.7749,
+          longitude: location ? parseFloat(location.lng) : -122.4194,
           severity: "CRITICAL",
           notes: "SOS triggered from Dashboard",
         },
@@ -254,7 +254,7 @@ export default function Dashboard() {
         onClick={() => setLocation("/map")}
         className="glass-card h-32 relative overflow-hidden flex items-center justify-center cursor-pointer group"
       >
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9IiMwcjI4MzUiIGZpbGwtb3BhY2l0eT0iMSIvPgo8cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJ1cmwoI2EpIiBmaWxsLW9wYWNpdHk9IjEiLz4KPGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjAiIHgyPSI0MCIgeTI9IjQwIj4KPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9Ii4wNSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8cGF0aCBkPSJNMCAwaDQwIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+CjxwYXRoIGQ9Ik0wIDB2NDAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii4xIiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+')] opacity-20"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9IiMwcjI4MzUiIGZpbGwtb3BhY2l0eT0iMSIvPgo8cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJ1cmwoI2EpIiBmaWxsLW9wYWNpdHk9IjEiLz4KPGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjAiIHgyPSI0MCIgeTI9IjQwIj4KPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9Ii4wNSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8cGF0aCBkPSJNMCAwaDQwIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1vcGFjaXR5PSIuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+CjxwYXRoIGQ9Ik0wIDZ2NDAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii4xIiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+')] opacity-20"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
 
         <div className="relative z-10 flex items-center gap-2 bg-background/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 group-hover:border-accent/50 transition-colors">
@@ -262,6 +262,10 @@ export default function Dashboard() {
           <span className="text-sm font-medium tracking-wide">
             VIEW LIVE MAP
           </span>
+        </div>
+
+        <div className="absolute bottom-2 left-4 text-[10px] font-mono text-accent/70 bg-black/50 px-2 py-0.5 rounded border border-accent/20 z-10">
+          GPS LOCK: {location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : "ACQUIRING..."}
         </div>
 
         <motion.div

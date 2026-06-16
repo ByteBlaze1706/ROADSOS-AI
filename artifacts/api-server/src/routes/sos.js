@@ -101,145 +101,193 @@ router.get("/emergency/stats", async (_req, res) => {
   return res.json(stats);
 });
 
-router.get("/nearby-services", (req, res) => {
-  const type = req.query.type;
-  const services = [
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return parseFloat((R * c).toFixed(1));
+}
+
+async function searchNearby(lat, lng, googleType, keyword, apiKey) {
+  try {
+    let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&key=${apiKey}`;
+    if (googleType) {
+      url += `&type=${googleType}`;
+    }
+    if (keyword) {
+      url += `&keyword=${encodeURIComponent(keyword)}`;
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      return [];
+    }
+    const data = await response.json();
+    return data.results || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function getPlacePhone(placeId, apiKey) {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.result?.formatted_phone_number || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function getMockServices(lat, lng) {
+  return [
     {
       id: "h1",
-      name: "City General Hospital",
+      name: "City General Hospital (Mock)",
       type: "hospital",
-      latitude: 28.6139,
-      longitude: 77.209,
+      latitude: lat + 0.005,
+      longitude: lng + 0.005,
       distance: 0.8,
       phone: "+91-11-2345-6789",
       eta: 4,
       available: true,
     },
     {
-      id: "h2",
-      name: "Apollo Emergency Center",
-      type: "hospital",
-      latitude: 28.62,
-      longitude: 77.215,
-      distance: 1.2,
-      phone: "+91-11-9876-5432",
-      eta: 6,
-      available: true,
-    },
-    {
       id: "p1",
-      name: "Police Station — Sector 4",
+      name: "Police Station — Sector 4 (Mock)",
       type: "police",
-      latitude: 28.61,
-      longitude: 77.205,
+      latitude: lat - 0.005,
+      longitude: lng - 0.005,
       distance: 0.5,
       phone: "100",
       eta: 3,
       available: true,
     },
     {
-      id: "p2",
-      name: "Traffic Police Post",
-      type: "police",
-      latitude: 28.616,
-      longitude: 77.2,
-      distance: 1.1,
-      phone: "100",
-      eta: 5,
-      available: true,
-    },
-    {
-      id: "a1",
-      name: "Rapid Ambulance Service",
-      type: "ambulance",
-      latitude: 28.612,
-      longitude: 77.208,
-      distance: 0.6,
-      phone: "108",
-      eta: 4,
-      available: true,
-    },
-    {
-      id: "a2",
-      name: "City EMS Unit 7",
-      type: "ambulance",
-      latitude: 28.618,
-      longitude: 77.212,
-      distance: 1.4,
-      phone: "102",
-      eta: 7,
-      available: false,
-    },
-    {
       id: "t1",
-      name: "Metro Towing Services",
+      name: "Metro Towing Services (Mock)",
       type: "towing",
-      latitude: 28.609,
-      longitude: 77.207,
+      latitude: lat + 0.008,
+      longitude: lng - 0.002,
       distance: 1.0,
       phone: "+91-98765-43210",
       eta: 10,
       available: true,
     },
     {
-      id: "t2",
-      name: "Fastlane Recovery",
-      type: "towing",
-      latitude: 28.622,
-      longitude: 77.22,
-      distance: 2.1,
-      phone: "+91-87654-32109",
-      eta: 15,
-      available: true,
-    },
-    {
-      id: "f1",
-      name: "HP Petrol Station",
-      type: "fuel",
-      latitude: 28.608,
-      longitude: 77.203,
-      distance: 0.7,
-      phone: "+91-11-2222-3333",
-      eta: 2,
-      available: true,
-    },
-    {
-      id: "f2",
-      name: "IndianOil Express",
-      type: "fuel",
-      latitude: 28.624,
-      longitude: 77.218,
-      distance: 1.8,
-      phone: "+91-11-4444-5555",
-      eta: 5,
-      available: true,
-    },
-    {
       id: "pu1",
-      name: "24x7 Puncture Shop",
+      name: "24x7 Puncture Shop (Mock)",
       type: "puncture",
-      latitude: 28.611,
-      longitude: 77.206,
+      latitude: lat - 0.002,
+      longitude: lng + 0.006,
       distance: 0.4,
       phone: "+91-99887-76655",
       eta: 3,
       available: true,
     },
-    {
-      id: "pu2",
-      name: "Roadside Tire Fix",
-      type: "puncture",
-      latitude: 28.617,
-      longitude: 77.213,
-      distance: 1.3,
-      phone: "+91-88776-65544",
-      eta: 8,
-      available: true,
-    },
   ];
-  const filtered =
-    type && type !== "all" ? services.filter((s) => s.type === type) : services;
-  return res.json(filtered);
+}
+
+router.get("/nearby-services", async (req, res) => {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const type = req.query.type;
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: "Invalid or missing lat/lng parameters" });
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      req.log.warn("GOOGLE_MAPS_API_KEY is not defined. Returning mock services.");
+      const dummyServices = getMockServices(lat, lng);
+      const filtered = type && type !== "all" && type !== "ALL" ? dummyServices.filter((s) => s.type === type.toLowerCase().replace(/s$/, "")) : dummyServices;
+      return res.json(filtered);
+    }
+
+    let searchTasks = [];
+    const normalizedType = type ? type.toLowerCase() : "all";
+
+    if (normalizedType === "hospitals" || normalizedType === "hospital" || normalizedType === "all") {
+      searchTasks.push(
+        searchNearby(lat, lng, "hospital", "hospital", apiKey).then((results) =>
+          results.map((p) => ({ ...p, categoryType: "hospital" }))
+        )
+      );
+    }
+    if (normalizedType === "police" || normalizedType === "all") {
+      searchTasks.push(
+        searchNearby(lat, lng, "police", "police station", apiKey).then((results) =>
+          results.map((p) => ({ ...p, categoryType: "police" }))
+        )
+      );
+    }
+    if (normalizedType === "towing" || normalizedType === "all") {
+      searchTasks.push(
+        searchNearby(lat, lng, null, "towing service", apiKey).then((results) =>
+          results.map((p) => ({ ...p, categoryType: "towing" }))
+        )
+      );
+    }
+    if (normalizedType === "puncture" || normalizedType === "all") {
+      searchTasks.push(
+        searchNearby(lat, lng, null, "tire repair", apiKey).then((results) =>
+          results.map((p) => ({ ...p, categoryType: "puncture" }))
+        )
+      );
+    }
+
+    const taskResults = await Promise.all(searchTasks);
+    const rawPlaces = taskResults.flat();
+
+    let places = rawPlaces.map((place) => {
+      const pLat = place.geometry.location.lat;
+      const pLng = place.geometry.location.lng;
+      const distance = calculateDistance(lat, lng, pLat, pLng);
+      return {
+        id: place.place_id,
+        name: place.name,
+        type: place.categoryType,
+        latitude: pLat,
+        longitude: pLng,
+        distance,
+        vicinity: place.vicinity || "",
+        eta: Math.round(distance * 3 + 2),
+        available: place.business_status === "OPERATIONAL" && (!place.opening_hours || place.opening_hours.open_now !== false),
+        phone: ""
+      };
+    });
+
+    places.sort((a, b) => a.distance - b.distance);
+    let finalPlaces = places.slice(0, 30);
+
+    if (finalPlaces.length === 0) {
+      req.log.warn("Google Places API returned 0 results or failed. Using mock nearby services.");
+      const dummyServices = getMockServices(lat, lng);
+      finalPlaces = type && type !== "all" && type !== "ALL" ? dummyServices.filter((s) => s.type === type.toLowerCase().replace(/s$/, "")) : dummyServices;
+    } else {
+      const phoneTasks = finalPlaces.slice(0, 8).map(async (p) => {
+        const phone = await getPlacePhone(p.id, apiKey);
+        p.phone = phone;
+      });
+      await Promise.all(phoneTasks);
+    }
+
+    return res.json(finalPlaces);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch nearby services");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/config/maps-key", (req, res) => {
+  return res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY || "" });
 });
 
 export default router;

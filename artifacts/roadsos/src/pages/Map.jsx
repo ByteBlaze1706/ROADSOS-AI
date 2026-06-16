@@ -1,78 +1,264 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, Navigation, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth";
 import {
   useGetNearbyServices,
   getGetNearbyServicesQueryKey,
 } from "@workspace/api-client-react";
 
+let googleMapsPromise = null;
+function loadGoogleMapsScript(apiKey) {
+  if (googleMapsPromise) return googleMapsPromise;
+  googleMapsPromise = new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) {
+      resolve(window.google.maps);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve(window.google.maps);
+    script.onerror = (e) => reject(e);
+    document.head.appendChild(script);
+  });
+  return googleMapsPromise;
+}
+
+const cyberMapStyles = [
+  { elementType: "geometry", stylers: [{ color: "#0b0f19" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0b0f19" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#0095ff" }] },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#0095ff" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#0f1626" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#6b9a76" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#17263c" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#212a37" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#9ca3af" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#1f2937" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#111827" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#e5e7eb" }],
+  },
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#2f3948" }],
+  },
+  {
+    featureType: "transit.station",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#0095ff" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#05070a" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#0095ff" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#05070a" }],
+  },
+];
+
 export default function MapPage() {
   const [filter, setFilter] = useState("ALL");
   const filters = ["ALL", "HOSPITALS", "POLICE", "TOWING", "PUNCTURE"];
+  const { location } = useAuth();
 
-  // In a real app, we'd pass coordinates
+  const userLat = location?.lat || 28.6139;
+  const userLng = location?.lng || 77.2090;
+
   const { data: services, isLoading } = useGetNearbyServices(
     {
-      lat: 37.7749,
-      lng: -122.4194,
+      lat: userLat,
+      lng: userLng,
       type: filter === "ALL" ? undefined : filter.toLowerCase(),
     },
     {
       query: {
         queryKey: getGetNearbyServicesQueryKey({
-          lat: 37.7749,
-          lng: -122.4194,
+          lat: userLat,
+          lng: userLng,
           type: filter === "ALL" ? undefined : filter.toLowerCase(),
         }),
       },
     },
   );
 
-  // Fallback dummy data if API is not connected or returns empty
-  const dummyServices = [
-    {
-      id: "1",
-      name: "City General Hospital",
-      type: "HOSPITAL",
-      distance: 1.2,
-      eta: 4,
-      available: true,
-      phone: "555-0101",
-    },
-    {
-      id: "2",
-      name: "Central Police Precinct",
-      type: "POLICE",
-      distance: 2.5,
-      eta: 8,
-      available: true,
-      phone: "555-0102",
-    },
-    {
-      id: "3",
-      name: "Rapid Towing Co.",
-      type: "TOWING",
-      distance: 0.8,
-      eta: 3,
-      available: true,
-      phone: "555-0103",
-    },
-    {
-      id: "4",
-      name: "Mike's Puncture Repair",
-      type: "PUNCTURE",
-      distance: 3.1,
-      eta: 12,
-      available: false,
-      phone: "555-0104",
-    },
-  ];
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const mapContainerRef = useRef(null);
+  const gMapRef = useRef(null);
+  const markersRef = useRef([]);
 
-  const displayServices = services?.length
-    ? services
-    : dummyServices.filter((s) => filter === "ALL" || s.type === filter);
+  useEffect(() => {
+    async function init() {
+      try {
+        const res = await fetch("/api/config/maps-key");
+        const data = await res.json();
+        const key = data.apiKey;
+        if (!key) {
+          console.warn("No Google Maps API Key provided by server.");
+          // Enable flag so fallback mock marker setup can run if needed
+          setIsMapLoaded(true);
+          return;
+        }
+        await loadGoogleMapsScript(key);
+        setIsMapLoaded(true);
+      } catch (err) {
+        console.error("Failed to load Google Maps script:", err);
+      }
+    }
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (!isMapLoaded || !mapContainerRef.current || !window.google) return;
+
+    if (!gMapRef.current) {
+      gMapRef.current = new window.google.maps.Map(mapContainerRef.current, {
+        center: { lat: userLat, lng: userLng },
+        zoom: 14,
+        styles: cyberMapStyles,
+        disableDefaultUI: false,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+    } else {
+      gMapRef.current.setCenter({ lat: userLat, lng: userLng });
+    }
+  }, [isMapLoaded, userLat, userLng]);
+
+  useEffect(() => {
+    if (!isMapLoaded || !gMapRef.current || !window.google) return;
+
+    // Clear existing markers
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+
+    const mapInstance = gMapRef.current;
+
+    // User Location Marker
+    const userMarker = new window.google.maps.Marker({
+      position: { lat: userLat, lng: userLng },
+      map: mapInstance,
+      title: "YOUR LOCATION",
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: "#0095ff",
+        fillOpacity: 1.0,
+        strokeColor: "#ffffff",
+        strokeWeight: 2,
+      },
+    });
+
+    markersRef.current.push(userMarker);
+
+    const userInfoWindow = new window.google.maps.InfoWindow({
+      content: `<div style="color:black;font-family:sans-serif;padding:4px;"><strong>Your Current Live Location</strong><br/>Lat: ${userLat.toFixed(5)}<br/>Lng: ${userLng.toFixed(5)}</div>`,
+    });
+
+    userMarker.addListener("click", () => {
+      userInfoWindow.open(mapInstance, userMarker);
+    });
+
+    // POI Markers
+    if (services && services.length) {
+      services.forEach((service) => {
+        const color = service.type === "hospital" ? "#ff0033" : 
+                      service.type === "police" ? "#0055ff" : 
+                      service.type === "towing" ? "#ffcc00" : "#888888";
+        const marker = new window.google.maps.Marker({
+          position: { lat: service.latitude, lng: service.longitude },
+          map: mapInstance,
+          title: service.name,
+          icon: {
+            path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+            scale: 7,
+            fillColor: color,
+            fillOpacity: 0.9,
+            strokeColor: "#ffffff",
+            strokeWeight: 1,
+          },
+        });
+
+        const phoneHtml = service.phone ? `<br/><strong>Phone:</strong> ${service.phone}` : "";
+        const addressHtml = service.vicinity ? `<br/><strong>Address:</strong> ${service.vicinity}` : "";
+        const infoContent = `
+          <div style="color:black;font-family:sans-serif;padding:6px;max-width:200px;font-size:12px;">
+            <strong style="font-size:14px;color:#0b0f19;">${service.name}</strong>
+            <br/><span style="text-transform:uppercase;font-size:10px;font-weight:bold;color:#666;">${service.type}</span>
+            ${addressHtml}
+            ${phoneHtml}
+            <br/><strong>Distance:</strong> ${service.distance} KM
+            <br/><strong>ETA:</strong> ${service.eta} Min
+          </div>
+        `;
+
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: infoContent,
+        });
+
+        marker.addListener("click", () => {
+          infoWindow.open(mapInstance, marker);
+        });
+
+        markersRef.current.push(marker);
+      });
+    }
+  }, [isMapLoaded, services, userLat, userLng]);
+
+  const displayServices = services || [];
 
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden pb-20">
@@ -104,42 +290,8 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Styled Map Area */}
-      <div className="flex-1 relative bg-[#0a0f18] overflow-hidden">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,149,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,149,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(45deg)] transform-origin-top scale-[1.5]" />
-
-        {/* User Location Marker */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
-          <div className="w-4 h-4 bg-accent rounded-full relative z-10 shadow-[0_0_15px_rgba(0,149,255,1)]"></div>
-          <motion.div
-            className="absolute inset-0 rounded-full border-2 border-accent"
-            animate={{ scale: [1, 3], opacity: [0.8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-
-          <div className="mt-2 bg-black/80 px-2 py-1 rounded border border-accent/30 text-[10px] text-accent font-mono backdrop-blur-sm">
-            USER_LOC_LOCKED
-          </div>
-        </div>
-
-        {/* Dummy Route Line */}
-        <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 5 }}>
-          <motion.path
-            d="M 50% 50% Q 60% 40% 70% 30% T 85% 20%"
-            fill="none"
-            stroke="#0095ff"
-            strokeWidth="3"
-            strokeDasharray="5,5"
-            animate={{ strokeDashoffset: [0, -20] }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-        </svg>
-
-        {/* Dummy POI Markers */}
-        <div className="absolute top-[30%] right-[15%] w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_rgba(255,0,0,1)]"></div>
-        <div className="absolute top-[60%] left-[25%] w-3 h-3 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(255,200,0,1)]"></div>
-      </div>
+      {/* Google Maps Container */}
+      <div ref={mapContainerRef} className="flex-1 w-full h-full relative bg-[#0a0f18]" />
 
       {/* Bottom Sheet - Service List */}
       <div className="absolute bottom-20 left-0 w-full z-20 px-4 pb-4 h-[40vh] flex flex-col">
@@ -149,7 +301,7 @@ export default function MapPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.05 }}
               key={service.id}
               className="glass-card p-4 border-white/10"
             >
@@ -161,6 +313,11 @@ export default function MapPage() {
                   <p className="text-xs text-muted-foreground uppercase">
                     {service.type}
                   </p>
+                  {service.vicinity && (
+                    <p className="text-[10px] text-white/40 mt-1 max-w-[250px] truncate">
+                      {service.vicinity}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="text-accent font-orbitron font-bold">
@@ -177,11 +334,21 @@ export default function MapPage() {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-white/10 hover:bg-white/5 h-10"
+                  disabled={!service.phone}
+                  onClick={() => {
+                    if (service.phone) {
+                      window.location.href = `tel:${service.phone}`;
+                    }
+                  }}
                 >
                   <Phone className="w-4 h-4 mr-2" /> CALL
                 </Button>
                 <Button
                   size="sm"
+                  onClick={() => {
+                    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`;
+                    window.open(navUrl, "_blank");
+                  }}
                   className="flex-1 bg-accent/20 text-accent hover:bg-accent/30 border border-accent/30 h-10"
                 >
                   <Navigation className="w-4 h-4 mr-2" /> NAVIGATE
@@ -189,9 +356,14 @@ export default function MapPage() {
               </div>
             </motion.div>
           ))}
-          {displayServices.length === 0 && (
+          {displayServices.length === 0 && !isLoading && (
             <div className="text-center p-8 text-muted-foreground">
               No assets located in current sector.
+            </div>
+          )}
+          {isLoading && (
+            <div className="text-center p-8 text-accent animate-pulse font-orbitron uppercase tracking-wider text-xs">
+              SCANNING SECTOR COGNITIVE RADAR...
             </div>
           )}
         </div>

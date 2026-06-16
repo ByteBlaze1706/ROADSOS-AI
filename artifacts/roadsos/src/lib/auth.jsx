@@ -9,7 +9,34 @@ export function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeSos, setActiveSos] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [location, setLocationState] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setLocationState({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error watching geolocation:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
+    } else {
+      console.warn("Geolocation is not supported by this browser.");
+    }
+  }, []);
 
   useEffect(() => {
     async function checkAuth() {
@@ -111,6 +138,7 @@ export function AuthProvider({ children }) {
         userId,
         isLoggedIn,
         activeSos,
+        location,
         login,
         logout,
         register,
