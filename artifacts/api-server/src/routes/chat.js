@@ -65,6 +65,18 @@ function getAiResponse(message) {
   return EMERGENCY_RESPONSES.default;
 }
 
+router.get("/models", async (req, res) => {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`
+    );
+    const data = await response.json();
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/chat", async (req, res) => {
   try {
     const userId = req.query.userId || "demo-user";
@@ -111,7 +123,7 @@ async function getGeminiResponse(message, chatHistory = []) {
     ];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -122,14 +134,16 @@ async function getGeminiResponse(message, chatHistory = []) {
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (text) return text.trim();
   } catch (err) {
-    console.error("Gemini API call failed, falling back to simulated response:", err);
+    console.error("Gemini API call failed:", err);
+    throw err;
   }
 
   return getAiResponse(message);
