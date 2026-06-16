@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
-    "build": "node ./build.mjs",
+    "build": "node ./build.mjs && npx esbuild api/index.js --bundle --platform=node --format=cjs --outfile=api/index.js --allow-overwrite --external:pg-native --external:esbuild --external:lightningcss",
     "start": "node --enable-source-maps ./dist/index.mjs"
   },
   "dependencies": {
