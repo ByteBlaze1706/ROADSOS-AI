@@ -1,9 +1,9 @@
 import { Router } from "express";
-import healthRouter from "./health";
-import profileRouter from "./profile";
-import sosRouter from "./sos";
-import incidentsRouter from "./incidents";
-import chatRouter from "./chat";
+import healthRouter from "./health.js";
+import profileRouter from "./profile.js";
+import sosRouter from "./sos.js";
+import incidentsRouter from "./incidents.js";
+import chatRouter from "./chat.js";
 
 const router = Router();
 
