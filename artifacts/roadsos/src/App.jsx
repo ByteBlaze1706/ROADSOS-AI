@@ -31,6 +31,7 @@ function Router() {
       <Route path="/" component={Splash} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/register" component={Signup} />
 
       <Route path="/setup">
         <ProtectedRoute>

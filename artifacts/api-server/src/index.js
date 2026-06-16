@@ -3,6 +3,12 @@ import { logger } from "./lib/logger.js";
 
 const rawPort = process.env["PORT"];
 
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET environment variable is required but was not provided.",
+  );
+}
+
 if (!rawPort) {
   throw new Error(
     "PORT environment variable is required but was not provided.",

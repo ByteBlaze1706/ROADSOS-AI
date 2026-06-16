@@ -2,12 +2,13 @@ import { Router } from "express";
 import { db, incidentsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { insertIncidentSchema } from "@workspace/db";
+import { authenticateUser } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.get("/incidents", async (req, res) => {
+router.get("/incidents", authenticateUser, async (req, res) => {
   try {
-    const userId = req.query.userId || "demo-user";
+    const userId = req.user.id.toString();
     const incidents = await db
       .select()
       .from(incidentsTable)
@@ -21,8 +22,9 @@ router.get("/incidents", async (req, res) => {
   }
 });
 
-router.post("/incidents", async (req, res) => {
+router.post("/incidents", authenticateUser, async (req, res) => {
   try {
+    req.body.userId = req.user.id.toString();
     const parsed = insertIncidentSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid incident data" });

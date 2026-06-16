@@ -52,7 +52,7 @@ const setupSchema = z.object({
 
 export default function Setup() {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { userId } = useAuth();
   const saveProfileMutation = useSaveProfile();
 
   const form = useForm({
@@ -73,12 +73,11 @@ export default function Setup() {
   });
 
   const onSubmit = async (data) => {
-    // Generate a user ID for demo purposes if not logged in yet via normal flow
-    const demoUserId = "demo-user-123";
+    const activeUserId = userId || "demo-user-123";
     saveProfileMutation.mutate(
       {
         data: {
-          userId: demoUserId,
+          userId: activeUserId,
           fullName: data.fullName,
           bloodGroup: data.bloodGroup,
           allergies: data.allergies,
@@ -89,7 +88,6 @@ export default function Setup() {
       },
       {
         onSuccess: () => {
-          login(demoUserId);
           setLocation("/dashboard");
         },
       },

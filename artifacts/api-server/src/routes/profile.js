@@ -2,12 +2,13 @@ import { Router } from "express";
 import { db, profilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { insertProfileSchema } from "@workspace/db";
+import { authenticateUser } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.get("/profile", async (req, res) => {
+router.get("/profile", authenticateUser, async (req, res) => {
   try {
-    const userId = req.query.userId || "demo-user";
+    const userId = req.user.id.toString();
     const [profile] = await db
       .select()
       .from(profilesTable)
@@ -23,8 +24,9 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-router.post("/profile", async (req, res) => {
+router.post("/profile", authenticateUser, async (req, res) => {
   try {
+    req.body.userId = req.user.id.toString();
     const parsed = insertProfileSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid profile data" });

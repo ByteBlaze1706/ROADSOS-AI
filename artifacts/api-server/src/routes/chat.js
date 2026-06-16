@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, chatMessagesTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { insertChatMessageSchema } from "@workspace/db";
+import { authenticateUser } from "../middlewares/auth.js";
 
 const router = Router();
 
@@ -77,9 +78,9 @@ router.get("/models", async (req, res) => {
   }
 });
 
-router.get("/chat", async (req, res) => {
+router.get("/chat", authenticateUser, async (req, res) => {
   try {
-    const userId = req.query.userId || "demo-user";
+    const userId = req.user.id.toString();
     const messages = await db
       .select()
       .from(chatMessagesTable)
@@ -149,9 +150,9 @@ async function getGeminiResponse(message, chatHistory = []) {
   return getAiResponse(message);
 }
 
-router.post("/chat", async (req, res) => {
+router.post("/chat", authenticateUser, async (req, res) => {
   try {
-    const userId = req.body.userId || "demo-user";
+    const userId = req.user.id.toString();
     const message = req.body.message;
     if (!message) return res.status(400).json({ error: "Message required" });
 

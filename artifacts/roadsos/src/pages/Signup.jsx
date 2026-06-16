@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ShieldAlert, Mail, Lock, UserPlus, CheckCircle2 } from "lucide-react";
+import { ShieldAlert, Mail, Lock, User, UserPlus, CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,8 +20,14 @@ import { Progress } from "@/components/ui/progress";
 
 const signupSchema = z
   .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .refine((val) => /[A-Z]/.test(val), "Password must contain at least one uppercase letter")
+      .refine((val) => /[a-z]/.test(val), "Password must contain at least one lowercase letter")
+      .refine((val) => /[0-9]/.test(val), "Password must contain at least one number"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -30,12 +37,14 @@ const signupSchema = z
 
 export default function Signup() {
   const [, setLocation] = useLocation();
+  const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const form = useForm({
     resolver: zodResolver(signupSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -52,8 +61,8 @@ export default function Signup() {
     let strength = 0;
     if (passwordValue.length >= 8) strength += 25;
     if (/[A-Z]/.test(passwordValue)) strength += 25;
+    if (/[a-z]/.test(passwordValue)) strength += 25;
     if (/[0-9]/.test(passwordValue)) strength += 25;
-    if (/[^A-Za-z0-9]/.test(passwordValue)) strength += 25;
     setPasswordStrength(strength);
   }, [passwordValue]);
 
@@ -65,10 +74,14 @@ export default function Signup() {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await register(data.name, data.email, data.password);
       setLocation("/setup");
-    }, 1000);
+    } catch (err) {
+      form.setError("root", { type: "server", message: err.message || "Registration failed." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,6 +111,35 @@ export default function Signup() {
         <div className="glass-card p-6 md:p-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {form.formState.errors.root && (
+                <div className="p-3 rounded-lg bg-destructive/15 border border-destructive/30 text-destructive text-sm font-medium">
+                  {form.formState.errors.root.message}
+                </div>
+              )}
+
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-muted-foreground uppercase text-xs tracking-wider">
+                      Full Name
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          placeholder="John Doe"
+                          className="pl-10 bg-background/50 border-white/10 text-white focus:border-primary focus:ring-primary/50"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-primary text-xs" />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -206,3 +248,4 @@ export default function Signup() {
     </div>
   );
 }
+

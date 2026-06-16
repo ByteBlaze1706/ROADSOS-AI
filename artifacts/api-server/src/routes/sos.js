@@ -2,11 +2,13 @@ import { Router } from "express";
 import { db, sosAlertsTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { insertSosAlertSchema } from "@workspace/db";
+import { authenticateUser } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.post("/sos", async (req, res) => {
+router.post("/sos", authenticateUser, async (req, res) => {
   try {
+    req.body.userId = req.user.id.toString();
     const parsed = insertSosAlertSchema.safeParse({
       ...req.body,
       status: "active",
@@ -25,9 +27,9 @@ router.post("/sos", async (req, res) => {
   }
 });
 
-router.get("/sos", async (req, res) => {
+router.get("/sos", authenticateUser, async (req, res) => {
   try {
-    const userId = req.query.userId || "demo-user";
+    const userId = req.user.id.toString();
     const alerts = await db
       .select()
       .from(sosAlertsTable)
@@ -41,9 +43,9 @@ router.get("/sos", async (req, res) => {
   }
 });
 
-router.get("/sos/active", async (req, res) => {
+router.get("/sos/active", authenticateUser, async (req, res) => {
   try {
-    const userId = req.query.userId || "demo-user";
+    const userId = req.user.id.toString();
     const [alert] = await db
       .select()
       .from(sosAlertsTable)
@@ -62,16 +64,21 @@ router.get("/sos/active", async (req, res) => {
   }
 });
 
-router.post("/sos/:id/cancel", async (req, res) => {
+router.post("/sos/:id/cancel", authenticateUser, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
     const [updated] = await db
       .update(sosAlertsTable)
       .set({ status: "cancelled", cancelledAt: new Date() })
-      .where(eq(sosAlertsTable.id, id))
+      .where(
+        and(
+          eq(sosAlertsTable.id, id),
+          eq(sosAlertsTable.userId, req.user.id.toString()),
+        ),
+      )
       .returning();
-    if (!updated) return res.status(404).json({ error: "SOS not found" });
+    if (!updated) return res.status(404).json({ error: "SOS not found or unauthorized" });
     return res.json(updated);
   } catch (err) {
     req.log.error({ err }, "Failed to cancel SOS");
