@@ -182,5 +182,5 @@ This project is licensed under the MIT License.
 # 🔗 Project Link
 
 ```bash
-https://emergency-response-ai--hekaredevayani0.replit.app/
+https://roadsos-ai.vercel.app
 ```
